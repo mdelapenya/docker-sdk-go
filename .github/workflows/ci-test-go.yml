@@ -1,0 +1,122 @@
+name: Run tests for a Go project
+run-name: "${{ inputs.project-directory }} ${{ inputs.go-version }} ${{ inputs.platforms }}"
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: true
+        type: string
+        description: "The version of Go to use for the test."
+      platforms:
+        required: true
+        type: string
+        default: "ubuntu-latest"
+        description: "The platforms in which the project will be run"
+      project-directory:
+        required: true
+        type: string
+        default: "."
+        description: "The directory where the Go project is located."
+
+permissions:
+  contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  # pull-requests: read
+
+jobs:
+  test-go-project:
+    name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
+    env:
+      SHOULD_RUN_SONAR: "false"
+    strategy:
+      matrix:
+        platform: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Disabling shallow clone is recommended for improving relevancy of reporting
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+            go-version: '${{ inputs.go-version }}'
+            cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
+        id: go
+
+      - name: ensure compilation
+        working-directory: ./${{ inputs.project-directory }}
+        run: go build ./...
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      - name: go test
+        working-directory: ./${{ inputs.project-directory }}
+        timeout-minutes: 30
+        run: |
+          gotestsum \
+            --format short-verbose \
+            --packages="./..." \
+            --junitfile TEST-unit.xml \
+            -- \
+            -v \
+            -coverprofile=coverage.out \
+            -timeout=60s \
+            -race
+
+      - name: Test Summary
+        uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
+        with:
+            paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
+        if: always()
+
+      - name: Decide if Sonar must be run
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          if [[ "1.23.x" == "${{ inputs.go-version }}" ]] && \
+             [[ "main" == "${{ github.ref_name }}" ]] && \
+             [[ "docker" == "${{ github.repository_owner }}" ]]; then
+            echo "SHOULD_RUN_SONAR=true" >> $GITHUB_ENV
+          fi
+
+      - name: Set Sonar Cloud environment variables
+        if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
+        run: |
+          echo "PROJECT_VERSION=$(grep 'latest_version' mkdocs.yml | cut -d':' -f2 | tr -d ' ')" >> $GITHUB_ENV
+          if [ "${{ inputs.project-directory }}" == "" ]; then
+            echo "PROJECT_KEY=docker_docker-sdk-go" >> $GITHUB_ENV
+            echo "PROJECT_NAME=docker-sdk-go" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
+          else
+            echo "PROJECT_KEY=docker_docker-sdk-go_$(echo ${{ inputs.project-directory }} | tr '/' '_')" >> $GITHUB_ENV
+            echo "PROJECT_NAME=docker-sdk-go-$(echo ${{ inputs.project-directory }} | tr '/' '-')" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**" >> $GITHUB_ENV
+          fi
+
+      - name: SonarQube Scan
+        if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
+        uses: SonarSource/sonarqube-scan-action@0303d6b62e310685c0e34d0b9cde218036885c4d # v5.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: "${{ inputs.project-directory == '' && '.' || inputs.project-directory }}"
+          args: >
+            -Dsonar.organization=docker
+            -Dsonar.projectKey=${{ env.PROJECT_KEY }}
+            -Dsonar.projectName=${{ env.PROJECT_NAME }}
+            -Dsonar.projectVersion=${{ env.PROJECT_VERSION }}
+            -Dsonar.project.monorepo.enabled=true
+            -Dsonar.branch.name=main
+            -Dsonar.sources=.
+            -Dsonar.exclusions=${{ env.PROJECT_SRC_EXCLUSIONS }}
+            -Dsonar.tests=.
+            -Dsonar.test.inclusions=**/*_test.go
+            -Dsonar.test.exclusions=${{ env.PROJECT_TEST_EXCLUSIONS }}
+            -Dsonar.go.coverage.reportPaths=coverage.out
+            -Dsonar.go.tests.reportPaths=TEST-unit.xml
