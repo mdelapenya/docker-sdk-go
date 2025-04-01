@@ -19,10 +19,10 @@ const tokenUsername = "<token>"
 
 // GetRegistryCredentials gets registry credentials for the passed in registry host.
 //
-// This will use [LoadDefaultConfig] to read registry auth details from the config.
+// This will use [Load] to read registry auth details from the config.
 // If the config doesn't exist, it will attempt to load registry credentials using the default credential helper for the platform.
 func GetRegistryCredentials(hostname string) (string, string, error) {
-	cfg, err := LoadDefaultConfig()
+	cfg, err := Load()
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			return "", "", fmt.Errorf("load default config: %w", err)

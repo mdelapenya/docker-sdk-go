@@ -14,7 +14,7 @@ import (
 var dockerConfig string
 
 func TestReadDockerConfig(t *testing.T) {
-	var expectedConfig *Config
+	var expectedConfig Config
 	err := json.Unmarshal([]byte(dockerConfig), &expectedConfig)
 	require.NoError(t, err)
 
@@ -34,7 +34,7 @@ func TestReadDockerConfig(t *testing.T) {
 
 			cfg, err := Load()
 			require.ErrorIs(t, err, os.ErrNotExist)
-			require.Nil(t, cfg)
+			require.Empty(t, cfg)
 		})
 
 		t.Run("invalid-config", func(t *testing.T) {
@@ -42,7 +42,7 @@ func TestReadDockerConfig(t *testing.T) {
 
 			cfg, err := Load()
 			require.ErrorContains(t, err, "json: cannot unmarshal array")
-			require.Nil(t, cfg)
+			require.Empty(t, cfg)
 		})
 	})
 
@@ -62,7 +62,7 @@ func TestReadDockerConfig(t *testing.T) {
 
 			cfg, err := Load()
 			require.ErrorContains(t, err, "json: cannot unmarshal array")
-			require.Nil(t, cfg)
+			require.Empty(t, cfg)
 		})
 	})
 
@@ -82,7 +82,7 @@ func TestReadDockerConfig(t *testing.T) {
 
 			cfg, err := Load()
 			require.ErrorContains(t, err, "json: cannot unmarshal array")
-			require.Nil(t, cfg)
+			require.Empty(t, cfg)
 		})
 	})
 }
@@ -95,7 +95,9 @@ func TestDir(t *testing.T) {
 			tmpDir := t.TempDir()
 			setupHome(t, tmpDir)
 
-			require.Equal(t, filepath.Join(tmpDir, ".docker"), Dir())
+			dir, err := Dir()
+			require.NoError(t, err)
+			require.Equal(t, filepath.Join(tmpDir, ".docker"), dir)
 		})
 	})
 
@@ -104,7 +106,9 @@ func TestDir(t *testing.T) {
 			tmpDir := t.TempDir()
 			setupDockerConfigs(t, tmpDir)
 
-			require.Equal(t, tmpDir, Dir())
+			dir, err := Dir()
+			require.NoError(t, err)
+			require.Equal(t, tmpDir, dir)
 		})
 	})
 }

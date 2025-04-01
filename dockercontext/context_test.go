@@ -69,7 +69,10 @@ func TestCurrentDockerHost(t *testing.T) {
 	t.Run("docker-context/not-found", func(tt *testing.T) {
 		setupDockerContexts(tt, 1, 1) // current context is context1
 
-		host, err := internal.ExtractDockerHost("context-not-found", metaRoot())
+		metaRoot, err := metaRoot()
+		require.NoError(t, err)
+
+		host, err := internal.ExtractDockerHost("context-not-found", metaRoot)
 		require.Error(t, err)
 		require.Equal(t, "", host)
 	})
@@ -95,7 +98,8 @@ func setupDockerContexts(t *testing.T, currentContextIndex int, contextsCount in
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir) // Windows support
 
-	configDir := dockerconfig.Dir()
+	configDir, err := dockerconfig.Dir()
+	require.NoError(t, err)
 
 	tempMkdirAll(t, configDir)
 
@@ -112,10 +116,11 @@ func setupDockerContexts(t *testing.T, currentContextIndex int, contextsCount in
 }`, baseContext, currentContextIndex)
 	}
 
-	err := os.WriteFile(configJSON, []byte(configBytes), 0o644)
+	err = os.WriteFile(configJSON, []byte(configBytes), 0o644)
 	require.NoError(t, err)
 
-	metaDir := metaRoot()
+	metaDir, err := metaRoot()
+	require.NoError(t, err)
 
 	tempMkdirAll(t, metaDir)
 
