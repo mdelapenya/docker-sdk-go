@@ -2,10 +2,7 @@ module github.com/docker/docker-sdk-go/dockerconfig
 
 go 1.24.1
 
-require (
-	github.com/cpuguy83/dockercfg v0.3.2
-	github.com/stretchr/testify v1.10.0
-)
+require github.com/stretchr/testify v1.10.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

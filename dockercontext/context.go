@@ -5,6 +5,7 @@ package dockercontext
 // with the goal of not consuming the CLI package and all its dependencies.
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -29,10 +30,6 @@ const (
 	// non-empty value, takes precedence over the default host (which is platform
 	// specific), or any host already set.
 	EnvOverrideHost = "DOCKER_HOST"
-
-	// configFileName is the name of the client configuration file inside the
-	// config-directory.
-	configFileName = "config.json"
 
 	// contextsDir is the name of the directory containing the contexts
 	contextsDir = "contexts"
@@ -74,10 +71,20 @@ func Current() string {
 // For that, it traverses the directory structure of the Docker configuration directory,
 // looking for the current context and its Docker endpoint.
 func CurrentDockerHost() (string, error) {
-	return internal.ExtractDockerHost(Current(), metaRoot())
+	metaRoot, err := metaRoot()
+	if err != nil {
+		return "", fmt.Errorf("meta root: %w", err)
+	}
+
+	return internal.ExtractDockerHost(Current(), metaRoot)
 }
 
 // metaRoot returns the root directory of the Docker context metadata.
-func metaRoot() string {
-	return filepath.Join(filepath.Join(dockerconfig.Dir(), contextsDir), metadataDir)
+func metaRoot() (string, error) {
+	dir, err := dockerconfig.Dir()
+	if err != nil {
+		return "", fmt.Errorf("docker config dir: %w", err)
+	}
+
+	return filepath.Join(filepath.Join(dir, contextsDir), metadataDir), nil
 }

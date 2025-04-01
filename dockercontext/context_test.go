@@ -34,7 +34,8 @@ func TestCurrent(t *testing.T) {
 	})
 
 	t.Run("current/override-context", func(tt *testing.T) {
-		tt.Setenv("DOCKER_CONTEXT", "context2")
+		setupDockerContexts(tt, 1, 3)           // current context is context1
+		tt.Setenv("DOCKER_CONTEXT", "context2") // override the current context
 
 		current := Current()
 		require.Equal(t, "context2", current)
@@ -69,9 +70,12 @@ func TestCurrentDockerHost(t *testing.T) {
 	t.Run("docker-context/not-found", func(tt *testing.T) {
 		setupDockerContexts(tt, 1, 1) // current context is context1
 
-		host, err := internal.ExtractDockerHost("context-not-found", metaRoot())
+		metaRoot, err := metaRoot()
+		require.NoError(t, err)
+
+		host, err := internal.ExtractDockerHost("context-not-found", metaRoot)
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 }
 
@@ -95,11 +99,12 @@ func setupDockerContexts(t *testing.T, currentContextIndex int, contextsCount in
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir) // Windows support
 
-	configDir := dockerconfig.Dir()
+	configDir, err := dockerconfig.Dir()
+	require.NoError(t, err)
 
 	tempMkdirAll(t, configDir)
 
-	configJSON := filepath.Join(configDir, configFileName)
+	configJSON := filepath.Join(configDir, dockerconfig.FileName)
 
 	const baseContext = "context"
 
@@ -112,10 +117,11 @@ func setupDockerContexts(t *testing.T, currentContextIndex int, contextsCount in
 }`, baseContext, currentContextIndex)
 	}
 
-	err := os.WriteFile(configJSON, []byte(configBytes), 0o644)
+	err = os.WriteFile(configJSON, []byte(configBytes), 0o644)
 	require.NoError(t, err)
 
-	metaDir := metaRoot()
+	metaDir, err := metaRoot()
+	require.NoError(t, err)
 
 	tempMkdirAll(t, metaDir)
 

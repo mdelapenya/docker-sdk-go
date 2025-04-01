@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cpuguy83/dockercfg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +14,7 @@ import (
 var dockerConfig string
 
 func TestReadDockerConfig(t *testing.T) {
-	var expectedConfig *dockercfg.Config
+	var expectedConfig Config
 	err := json.Unmarshal([]byte(dockerConfig), &expectedConfig)
 	require.NoError(t, err)
 
@@ -35,7 +34,7 @@ func TestReadDockerConfig(t *testing.T) {
 
 			cfg, err := Load()
 			require.ErrorIs(t, err, os.ErrNotExist)
-			require.Nil(t, cfg)
+			require.Empty(t, cfg)
 		})
 
 		t.Run("invalid-config", func(t *testing.T) {
@@ -43,7 +42,7 @@ func TestReadDockerConfig(t *testing.T) {
 
 			cfg, err := Load()
 			require.ErrorContains(t, err, "json: cannot unmarshal array")
-			require.Nil(t, cfg)
+			require.Empty(t, cfg)
 		})
 	})
 
@@ -63,14 +62,14 @@ func TestReadDockerConfig(t *testing.T) {
 
 			cfg, err := Load()
 			require.ErrorContains(t, err, "json: cannot unmarshal array")
-			require.Nil(t, cfg)
+			require.Empty(t, cfg)
 		})
 	})
 
-	t.Run("DOCKER_CONFIG", func(t *testing.T) {
+	t.Run(EnvOverrideDir, func(t *testing.T) {
 		t.Run("valid", func(t *testing.T) {
 			setupHome(t, "testdata", "not-found")
-			t.Setenv(EnvOverrideConfigDir, filepath.Join("testdata", ".docker"))
+			t.Setenv(EnvOverrideDir, filepath.Join("testdata", ".docker"))
 
 			cfg, err := Load()
 			require.NoError(t, err)
@@ -79,11 +78,11 @@ func TestReadDockerConfig(t *testing.T) {
 
 		t.Run("invalid-config", func(t *testing.T) {
 			setupHome(t, "testdata", "not-found")
-			t.Setenv(EnvOverrideConfigDir, filepath.Join("testdata", "invalid-config", ".docker"))
+			t.Setenv(EnvOverrideDir, filepath.Join("testdata", "invalid-config", ".docker"))
 
 			cfg, err := Load()
 			require.ErrorContains(t, err, "json: cannot unmarshal array")
-			require.Nil(t, cfg)
+			require.Empty(t, cfg)
 		})
 	})
 }
@@ -96,16 +95,20 @@ func TestDir(t *testing.T) {
 			tmpDir := t.TempDir()
 			setupHome(t, tmpDir)
 
-			require.Equal(t, filepath.Join(tmpDir, ".docker"), Dir())
+			dir, err := Dir()
+			require.NoError(t, err)
+			require.Equal(t, filepath.Join(tmpDir, ".docker"), dir)
 		})
 	})
 
-	t.Run("DOCKER_CONFIG", func(t *testing.T) {
+	t.Run(EnvOverrideDir, func(t *testing.T) {
 		t.Run("valid", func(t *testing.T) {
 			tmpDir := t.TempDir()
 			setupDockerConfigs(t, tmpDir)
 
-			require.Equal(t, tmpDir, Dir())
+			dir, err := Dir()
+			require.NoError(t, err)
+			require.Equal(t, tmpDir, dir)
 		})
 	})
 }
@@ -127,5 +130,5 @@ func setupDockerConfigs(t *testing.T, dirs ...string) {
 
 	dir := filepath.Join(dirs...)
 	t.Setenv("DOCKER_AUTH_CONFIG", dir)
-	t.Setenv("DOCKER_CONFIG", dir)
+	t.Setenv(EnvOverrideDir, dir)
 }
