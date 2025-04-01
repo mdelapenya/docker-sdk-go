@@ -34,7 +34,8 @@ func TestCurrent(t *testing.T) {
 	})
 
 	t.Run("current/override-context", func(tt *testing.T) {
-		tt.Setenv("DOCKER_CONTEXT", "context2")
+		setupDockerContexts(tt, 1, 3)           // current context is context1
+		tt.Setenv("DOCKER_CONTEXT", "context2") // override the current context
 
 		current := Current()
 		require.Equal(t, "context2", current)
