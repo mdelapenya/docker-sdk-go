@@ -40,7 +40,7 @@ jobs:
     if: needs.detect-packages.outputs.packages != '[]' # Ensure job runs only if there are changes
     strategy:
       matrix:
-        package: ${{ fromJSON(needs.changes.outputs.packages || '[]') }}
+        package: ${{ fromJSON(needs.detect-packages.outputs.packages || '[]') }}
     uses: ./.github/workflows/ci-lint-go.yml
     with:
       project-directory: "${{ matrix.package }}"
