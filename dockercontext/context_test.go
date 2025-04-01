@@ -74,7 +74,7 @@ func TestCurrentDockerHost(t *testing.T) {
 
 		host, err := internal.ExtractDockerHost("context-not-found", metaRoot)
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 }
 
