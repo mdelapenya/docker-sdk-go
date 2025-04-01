@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestDecodeBase64Auth(t *testing.T) {
@@ -66,13 +68,14 @@ func testBase64Case(tc base64TestCase, authFn testAuthFn) func(t *testing.T) {
 		t.Helper()
 
 		u, p, err := authFn()
-		if tc.expErr && err == nil {
-			t.Fatal("expected error")
+		if tc.expErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
 		}
 
-		if u != tc.expUser || p != tc.expPass {
-			t.Errorf("decoded username and password do not match, expected user: %s, password: %s, got user: %s, password: %s", tc.expUser, tc.expPass, u, p)
-		}
+		require.Equal(t, tc.expUser, u)
+		require.Equal(t, tc.expPass, p)
 	}
 }
 
@@ -81,17 +84,9 @@ func validateAuth(t *testing.T, hostname, expectedUser, expectedPass string) {
 	t.Helper()
 
 	username, password, err := GetRegistryCredentials(hostname)
-	if err != nil {
-		t.Fatalf("get registry credentials: %v", err)
-	}
-
-	if username != expectedUser {
-		t.Fatalf("expected username: %q, got username: %q", expectedUser, username)
-	}
-
-	if password != expectedPass {
-		t.Fatalf("expected password: %q, got password: %q", expectedPass, password)
-	}
+	require.NoError(t, err)
+	require.Equal(t, expectedUser, username)
+	require.Equal(t, expectedPass, password)
 }
 
 // validateAuthError is a helper function to validate we get an error for the given hostname.
@@ -99,13 +94,10 @@ func validateAuthError(t *testing.T, hostname string, expectedErr error) {
 	t.Helper()
 
 	username, password, err := GetRegistryCredentials(hostname)
-	if err == nil || err.Error() != expectedErr.Error() {
-		t.Fatalf("expected error: %q got: %v", expectedErr, err)
-	}
-
-	if username != "" || password != "" {
-		t.Fatalf("expected empty username and password, got username: %q, password: %q", username, password)
-	}
+	require.Error(t, err)
+	require.Equal(t, expectedErr.Error(), err.Error())
+	require.Empty(t, username)
+	require.Empty(t, password)
 }
 
 // mockExecCommand is a helper function to mock exec.LookPath and exec.Command for testing.
