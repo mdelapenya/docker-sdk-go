@@ -7,8 +7,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
-
-	"github.com/cpuguy83/dockercfg"
 )
 
 const (
@@ -23,12 +21,12 @@ const (
 )
 
 // Load returns the docker config file. It will internally check, in this particular order:
-// 1. the DOCKER_AUTH_CONFIG environment variable, unmarshalling it into a dockercfg.Config
+// 1. the DOCKER_AUTH_CONFIG environment variable, unmarshalling it into a Config
 // 2. the DOCKER_CONFIG environment variable, as the path to the config file
 // 3. else it will load the default config file, which is ~/.docker/config.json
-func Load() (*dockercfg.Config, error) {
+func Load() (*Config, error) {
 	if env := os.Getenv("DOCKER_AUTH_CONFIG"); env != "" {
-		var cfg dockercfg.Config
+		var cfg Config
 		if err := json.Unmarshal([]byte(env), &cfg); err != nil {
 			return nil, fmt.Errorf("unmarshal DOCKER_AUTH_CONFIG: %w", err)
 		}
@@ -36,7 +34,7 @@ func Load() (*dockercfg.Config, error) {
 		return &cfg, nil
 	}
 
-	cfg, err := dockercfg.LoadDefaultConfig()
+	cfg, err := LoadDefaultConfig()
 	if err != nil {
 		return nil, fmt.Errorf("load default config: %w", err)
 	}

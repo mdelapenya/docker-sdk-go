@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cpuguy83/dockercfg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +14,7 @@ import (
 var dockerConfig string
 
 func TestReadDockerConfig(t *testing.T) {
-	var expectedConfig *dockercfg.Config
+	var expectedConfig *Config
 	err := json.Unmarshal([]byte(dockerConfig), &expectedConfig)
 	require.NoError(t, err)
 
