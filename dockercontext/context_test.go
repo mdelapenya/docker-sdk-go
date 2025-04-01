@@ -99,7 +99,7 @@ func setupDockerContexts(t *testing.T, currentContextIndex int, contextsCount in
 
 	tempMkdirAll(t, configDir)
 
-	configJSON := filepath.Join(configDir, configFileName)
+	configJSON := filepath.Join(configDir, dockerconfig.FileName)
 
 	const baseContext = "context"
 

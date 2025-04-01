@@ -137,7 +137,7 @@ func mockExecCommand(t *testing.T, env ...string) {
 }
 
 func TestGetRegistryCredentials(t *testing.T) {
-	t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", "credhelpers-config"))
+	t.Setenv(EnvOverrideDir, filepath.Join("testdata", "credhelpers-config"))
 
 	t.Run("auths/user-pass", func(t *testing.T) {
 		validateAuth(t, "userpass.io", "user", "pass")
@@ -195,12 +195,12 @@ func TestGetRegistryCredentials(t *testing.T) {
 	})
 
 	t.Run("config/not-found", func(t *testing.T) {
-		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", "missing"))
+		t.Setenv(EnvOverrideDir, filepath.Join("testdata", "missing"))
 		validateAuth(t, "userpass.io", "", "")
 	})
 
 	t.Run("config/invalid", func(t *testing.T) {
-		t.Setenv("DOCKER_CONFIG", "/dev/null")
+		t.Setenv(EnvOverrideDir, "/dev/null")
 		expectedErr := errors.New("load default config: open config: open /dev/null/config.json: not a directory")
 		validateAuthError(t, "helper.io", expectedErr)
 	})

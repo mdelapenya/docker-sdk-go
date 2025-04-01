@@ -14,7 +14,7 @@ func UserHomeConfigPath() (string, error) {
 		return "", fmt.Errorf("user home dir: %w", err)
 	}
 
-	return filepath.Join(home, ".docker", "config.json"), nil
+	return filepath.Join(home, ".docker", FileName), nil
 }
 
 // ConfigPath returns the path to the docker cli config.
@@ -22,8 +22,8 @@ func UserHomeConfigPath() (string, error) {
 // It will either use the DOCKER_CONFIG env var if set, or the value from [UserHomeConfigPath]
 // DOCKER_CONFIG would be the dir path where `config.json` is stored, this returns the path to config.json.
 func ConfigPath() (string, error) {
-	if p := os.Getenv("DOCKER_CONFIG"); p != "" {
-		return filepath.Join(p, "config.json"), nil
+	if p := os.Getenv(EnvOverrideDir); p != "" {
+		return filepath.Join(p, FileName), nil
 	}
 	return UserHomeConfigPath()
 }

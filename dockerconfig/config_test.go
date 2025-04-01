@@ -66,10 +66,10 @@ func TestReadDockerConfig(t *testing.T) {
 		})
 	})
 
-	t.Run("DOCKER_CONFIG", func(t *testing.T) {
+	t.Run(EnvOverrideDir, func(t *testing.T) {
 		t.Run("valid", func(t *testing.T) {
 			setupHome(t, "testdata", "not-found")
-			t.Setenv(EnvOverrideConfigDir, filepath.Join("testdata", ".docker"))
+			t.Setenv(EnvOverrideDir, filepath.Join("testdata", ".docker"))
 
 			cfg, err := Load()
 			require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestReadDockerConfig(t *testing.T) {
 
 		t.Run("invalid-config", func(t *testing.T) {
 			setupHome(t, "testdata", "not-found")
-			t.Setenv(EnvOverrideConfigDir, filepath.Join("testdata", "invalid-config", ".docker"))
+			t.Setenv(EnvOverrideDir, filepath.Join("testdata", "invalid-config", ".docker"))
 
 			cfg, err := Load()
 			require.ErrorContains(t, err, "json: cannot unmarshal array")
@@ -99,7 +99,7 @@ func TestDir(t *testing.T) {
 		})
 	})
 
-	t.Run("DOCKER_CONFIG", func(t *testing.T) {
+	t.Run(EnvOverrideDir, func(t *testing.T) {
 		t.Run("valid", func(t *testing.T) {
 			tmpDir := t.TempDir()
 			setupDockerConfigs(t, tmpDir)
@@ -126,5 +126,5 @@ func setupDockerConfigs(t *testing.T, dirs ...string) {
 
 	dir := filepath.Join(dirs...)
 	t.Setenv("DOCKER_AUTH_CONFIG", dir)
-	t.Setenv("DOCKER_CONFIG", dir)
+	t.Setenv(EnvOverrideDir, dir)
 }

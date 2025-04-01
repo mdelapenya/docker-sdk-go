@@ -30,10 +30,6 @@ const (
 	// specific), or any host already set.
 	EnvOverrideHost = "DOCKER_HOST"
 
-	// configFileName is the name of the client configuration file inside the
-	// config-directory.
-	configFileName = "config.json"
-
 	// contextsDir is the name of the directory containing the contexts
 	contextsDir = "contexts"
 

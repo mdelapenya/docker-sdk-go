@@ -10,14 +10,18 @@ import (
 )
 
 const (
-	// EnvOverrideConfigDir is the name of the environment variable that can be
+	// EnvOverrideDir is the name of the environment variable that can be
 	// used to override the location of the client configuration files (~/.docker).
 	//
 	// It takes priority over the default.
-	EnvOverrideConfigDir = "DOCKER_CONFIG"
+	EnvOverrideDir = "DOCKER_CONFIG"
 
 	// configFileDir is the name of the directory containing the client configuration files
 	configFileDir = ".docker"
+
+	// configFileName is the name of the client configuration file inside the
+	// config-directory.
+	FileName = "config.json"
 )
 
 // Load returns the docker config file. It will internally check, in this particular order:
@@ -72,7 +76,7 @@ func getHomeDir() string {
 // It will check the DOCKER_CONFIG environment variable, and if not set,
 // it will use the home directory.
 func Dir() string {
-	configDir := os.Getenv(EnvOverrideConfigDir)
+	configDir := os.Getenv(EnvOverrideDir)
 	if configDir == "" {
 		return filepath.Join(getHomeDir(), configFileDir)
 	}
