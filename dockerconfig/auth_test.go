@@ -200,7 +200,7 @@ func TestGetRegistryCredentials(t *testing.T) {
 	})
 
 	t.Run("config/invalid", func(t *testing.T) {
-		t.Setenv(EnvOverrideDir, "/dev/null")
+		t.Setenv(EnvOverrideDir, os.DevNull)
 		expectedErr := errors.New("load default config: open config: open /dev/null/config.json: not a directory")
 		validateAuthError(t, "helper.io", expectedErr)
 	})
