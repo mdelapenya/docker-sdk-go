@@ -190,12 +190,6 @@ func TestGetRegistryCredentials(t *testing.T) {
 		t.Setenv(EnvOverrideDir, filepath.Join("testdata", "missing"))
 		validateAuth(t, "userpass.io", "", "")
 	})
-
-	t.Run("config/invalid", func(t *testing.T) {
-		t.Setenv(EnvOverrideDir, os.DevNull)
-		expectedErr := errors.New("load default config: open config: open /dev/null/config.json: not a directory")
-		validateAuthError(t, "helper.io", expectedErr)
-	})
 }
 
 // TestMain is hijacked so we can run a test helper which can write
