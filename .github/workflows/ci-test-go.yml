@@ -54,7 +54,8 @@ jobs:
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
 
-      - name: go test
+      - name: go test (Unix)
+        if: runner.os != 'Windows'
         working-directory: ./${{ inputs.project-directory }}
         timeout-minutes: 30
         run: |
@@ -66,6 +67,21 @@ jobs:
             -v \
             -coverprofile=coverage.out \
             -timeout=60s \
+            -race
+
+      - name: go test (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ./${{ inputs.project-directory }}
+        timeout-minutes: 30
+        run: |
+          gotestsum `
+            --format short-verbose `
+            --packages="./..." `
+            --junitfile TEST-unit.xml `
+            -- `
+            -v `
+            -coverprofile=coverage.out `
+            -timeout=60s `
             -race
 
       - name: Test Summary
