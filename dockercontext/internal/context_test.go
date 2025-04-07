@@ -96,7 +96,7 @@ func TestStore_load(t *testing.T) {
 		s := &store{root: tmpDir}
 
 		contextDir := filepath.Join(tmpDir, "empty")
-		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.MkdirAll(contextDir, 0o755))
 
 		_, err := s.load(contextDir)
 		require.Error(t, err)
@@ -108,11 +108,11 @@ func TestStore_load(t *testing.T) {
 		s := &store{root: tmpDir}
 
 		contextDir := filepath.Join(tmpDir, "invalid")
-		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.MkdirAll(contextDir, 0o755))
 		require.NoError(t, os.WriteFile(
 			filepath.Join(contextDir, metaFile),
 			[]byte("invalid json"),
-			0644,
+			0o644,
 		))
 
 		_, err := s.load(contextDir)
@@ -129,7 +129,7 @@ func TestStore_load(t *testing.T) {
 		s := &store{root: tmpDir}
 
 		contextDir := filepath.Join(tmpDir, "no-access")
-		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.MkdirAll(contextDir, 0o755))
 
 		meta := metadata{
 			Name: "test",
@@ -140,8 +140,8 @@ func TestStore_load(t *testing.T) {
 		setupTestContext(t, tmpDir, "no-access", meta)
 
 		// Remove read permissions
-		require.NoError(t, os.Chmod(filepath.Join(contextDir, metaFile), 0000))
-		defer os.Chmod(filepath.Join(contextDir, metaFile), 0644)
+		require.NoError(t, os.Chmod(filepath.Join(contextDir, metaFile), 0o000))
+		defer os.Chmod(filepath.Join(contextDir, metaFile), 0o644)
 
 		_, err := s.load(contextDir)
 		require.Error(t, err)
@@ -153,11 +153,11 @@ func TestStore_load(t *testing.T) {
 		s := &store{root: tmpDir}
 
 		contextDir := filepath.Join(tmpDir, "empty")
-		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.MkdirAll(contextDir, 0o755))
 		require.NoError(t, os.WriteFile(
 			filepath.Join(contextDir, metaFile),
 			[]byte("{}"),
-			0644,
+			0o644,
 		))
 
 		got, err := s.load(contextDir)
@@ -172,7 +172,7 @@ func TestStore_load(t *testing.T) {
 		s := &store{root: tmpDir}
 
 		contextDir := filepath.Join(tmpDir, "partial")
-		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.MkdirAll(contextDir, 0o755))
 
 		// Only name and docker endpoint, no context metadata
 		meta := metadata{
@@ -237,11 +237,11 @@ func TestStore_list(t *testing.T) {
 
 		// Create a context directory with invalid JSON
 		contextDir := filepath.Join(tmpDir, "invalid")
-		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.MkdirAll(contextDir, 0o755))
 		require.NoError(t, os.WriteFile(
 			filepath.Join(contextDir, metaFile),
 			[]byte("invalid json"),
-			0644,
+			0o644,
 		))
 
 		_, err := s.list()
@@ -264,11 +264,11 @@ func TestStore_list(t *testing.T) {
 
 		// Setup an invalid context
 		invalidDir := filepath.Join(tmpDir, "invalid")
-		require.NoError(t, os.MkdirAll(invalidDir, 0755))
+		require.NoError(t, os.MkdirAll(invalidDir, 0o755))
 		require.NoError(t, os.WriteFile(
 			filepath.Join(invalidDir, metaFile),
 			[]byte("invalid json"),
-			0644,
+			0o644,
 		))
 
 		_, err := s.list()
@@ -286,7 +286,7 @@ func TestStore_list(t *testing.T) {
 
 		// Create a context with no read permissions
 		contextDir := filepath.Join(tmpDir, "no-access")
-		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.MkdirAll(contextDir, 0o755))
 
 		meta := metadata{
 			Name: "test",
@@ -297,8 +297,8 @@ func TestStore_list(t *testing.T) {
 		setupTestContext(t, tmpDir, "no-access", meta)
 
 		// Remove read permissions
-		require.NoError(t, os.Chmod(filepath.Join(contextDir, metaFile), 0000))
-		defer os.Chmod(filepath.Join(contextDir, metaFile), 0644) // Restore permissions for cleanup
+		require.NoError(t, os.Chmod(filepath.Join(contextDir, metaFile), 0o000))
+		defer os.Chmod(filepath.Join(contextDir, metaFile), 0o644) // Restore permissions for cleanup
 
 		_, err := s.list()
 		require.Error(t, err)
@@ -311,11 +311,11 @@ func TestStore_list(t *testing.T) {
 
 		// Create a context with empty but valid JSON
 		contextDir := filepath.Join(tmpDir, "empty")
-		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.MkdirAll(contextDir, 0o755))
 		require.NoError(t, os.WriteFile(
 			filepath.Join(contextDir, metaFile),
 			[]byte("{}"),
-			0644,
+			0o644,
 		))
 
 		list, err := s.list()
@@ -366,7 +366,7 @@ func setupTestContext(t *testing.T, root, relPath string, meta metadata) {
 	t.Helper()
 
 	contextDir := filepath.Join(root, relPath)
-	require.NoError(t, os.MkdirAll(contextDir, 0755))
+	require.NoError(t, os.MkdirAll(contextDir, 0o755))
 
 	data, err := json.Marshal(meta)
 	require.NoError(t, err)
@@ -374,6 +374,6 @@ func setupTestContext(t *testing.T, root, relPath string, meta metadata) {
 	require.NoError(t, os.WriteFile(
 		filepath.Join(contextDir, metaFile),
 		data,
-		0644,
+		0o644,
 	))
 }
