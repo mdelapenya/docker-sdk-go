@@ -350,7 +350,7 @@ func TestStore_list(t *testing.T) {
 		s := &store{root: tmpDir}
 
 		contextDir := filepath.Join(tmpDir, "locked")
-		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.MkdirAll(contextDir, 0o755))
 
 		// Create and lock the file
 		f, err := os.Create(filepath.Join(contextDir, metaFile))
@@ -358,7 +358,7 @@ func TestStore_list(t *testing.T) {
 		require.NoError(t, f.Close())
 
 		// Try to list while file is locked
-		f2, err := os.OpenFile(filepath.Join(contextDir, metaFile), os.O_RDWR, 0644)
+		f2, err := os.OpenFile(filepath.Join(contextDir, metaFile), os.O_RDWR, 0o644)
 		require.NoError(t, err)
 		defer f2.Close()
 
