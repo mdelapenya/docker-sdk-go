@@ -88,7 +88,7 @@ formatters:
       sections:
         - standard
         - default
-        - prefix(github.com/testcontainers)
+        - prefix(github.com/mdelapenya)
   exclusions:
     generated: lax
     paths:
