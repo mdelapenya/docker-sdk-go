@@ -126,9 +126,9 @@ func (s *metadataStore) getByID(id contextdir) (Metadata, error) {
 	bytes, err := os.ReadFile(fileName)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return Metadata{}, fmt.Errorf("context not found: %w", err)
+			return Metadata{}, fmt.Errorf("context file not found: %w", err)
 		}
-		return Metadata{}, err
+		return Metadata{}, fmt.Errorf("read file: %w", err)
 	}
 
 	var untyped untypedContextMetadata
