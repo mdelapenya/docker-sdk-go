@@ -41,16 +41,8 @@ const (
 // ErrDockerHostNotSet is the error returned when the Docker host is not set in the Docker context
 var ErrDockerHostNotSet = internal.ErrDockerHostNotSet
 
-// Current returns the current context name, based on
-// environment variables and the cli configuration file. It does not
-// validate if the given context exists or if it's valid; errors may
-// occur when trying to use it.
-func Current() string {
-	cfg, err := dockerconfig.Load()
-	if err != nil {
-		return DefaultContextName
-	}
-
+// getContextFromEnv returns the context name from the environment variables.
+func getContextFromEnv() string {
 	if os.Getenv(EnvOverrideHost) != "" {
 		return DefaultContextName
 	}
@@ -59,24 +51,51 @@ func Current() string {
 		return ctxName
 	}
 
-	if cfg.CurrentContext != "" {
-		// We don't validate if this context exists: errors may occur when trying to use it.
-		return cfg.CurrentContext
+	return ""
+}
+
+// Current returns the current context name, based on
+// environment variables and the cli configuration file. It does not
+// validate if the given context exists or if it's valid.
+//
+// If the current context is not found, it returns the default context name.
+func Current() (string, error) {
+	// Check env vars first (clearer precedence)
+	if ctx := getContextFromEnv(); ctx != "" {
+		return ctx, nil
 	}
 
-	return DefaultContextName
+	// Then check config
+	cfg, err := dockerconfig.Load()
+	if err != nil {
+		if os.IsNotExist(err) {
+			return DefaultContextName, nil
+		}
+		return "", fmt.Errorf("load docker config: %w", err)
+	}
+
+	if cfg.CurrentContext != "" {
+		return cfg.CurrentContext, nil
+	}
+
+	return DefaultContextName, nil
 }
 
 // CurrentDockerHost returns the Docker host from the current Docker context.
 // For that, it traverses the directory structure of the Docker configuration directory,
 // looking for the current context and its Docker endpoint.
 func CurrentDockerHost() (string, error) {
+	current, err := Current()
+	if err != nil {
+		return "", fmt.Errorf("current context: %w", err)
+	}
+
 	metaRoot, err := metaRoot()
 	if err != nil {
 		return "", fmt.Errorf("meta root: %w", err)
 	}
 
-	return internal.ExtractDockerHost(Current(), metaRoot)
+	return internal.ExtractDockerHost(current, metaRoot)
 }
 
 // metaRoot returns the root directory of the Docker context metadata.
@@ -86,5 +105,5 @@ func metaRoot() (string, error) {
 		return "", fmt.Errorf("docker config dir: %w", err)
 	}
 
-	return filepath.Join(filepath.Join(dir, contextsDir), metadataDir), nil
+	return filepath.Join(dir, contextsDir, metadataDir), nil
 }

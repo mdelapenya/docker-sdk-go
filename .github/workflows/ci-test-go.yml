@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   test-go-project:
-    name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
+    name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}/${{ matrix.platform }}"
     env:
       SHOULD_RUN_SONAR: "false"
     strategy:
