@@ -1,6 +1,6 @@
 module github.com/mdelapenya/docker-sdk-go/dockercontext
 
-go 1.24.1
+go 1.23.6
 
 replace github.com/mdelapenya/docker-sdk-go/dockerconfig => ../dockerconfig
 
