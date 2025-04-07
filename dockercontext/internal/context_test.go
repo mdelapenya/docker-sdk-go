@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,11 +74,120 @@ func TestStore_load(t *testing.T) {
 
 		got, err := s.load(contextDir)
 		require.NoError(t, err)
-		require.Equal(t, want.Name, got.Name)
-		require.Equal(t, want.Context.Description, got.Context.Description)
-		require.Equal(t, want.Context.Fields, got.Context.Fields)
-		require.Equal(t, want.Endpoints["docker"].Host, got.Endpoints["docker"].Host)
-		require.Equal(t, want.Endpoints["docker"].SkipTLSVerify, got.Endpoints["docker"].SkipTLSVerify)
+		assert.Equal(t, want.Name, got.Name)
+		assert.Equal(t, want.Context.Description, got.Context.Description)
+		assert.Equal(t, want.Context.Fields, got.Context.Fields)
+		assert.Equal(t, want.Endpoints["docker"].Host, got.Endpoints["docker"].Host)
+		assert.Equal(t, want.Endpoints["docker"].SkipTLSVerify, got.Endpoints["docker"].SkipTLSVerify)
+	})
+
+	t.Run("directory-does-not-exist", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		s := &store{root: tmpDir}
+
+		nonExistentDir := filepath.Join(tmpDir, "does-not-exist")
+		_, err := s.load(nonExistentDir)
+		require.Error(t, err)
+		assert.True(t, os.IsNotExist(err))
+	})
+
+	t.Run("meta-json-does-not-exist", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		s := &store{root: tmpDir}
+
+		contextDir := filepath.Join(tmpDir, "empty")
+		require.NoError(t, os.MkdirAll(contextDir, 0755))
+
+		_, err := s.load(contextDir)
+		require.Error(t, err)
+		assert.True(t, os.IsNotExist(err))
+	})
+
+	t.Run("invalid-json", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		s := &store{root: tmpDir}
+
+		contextDir := filepath.Join(tmpDir, "invalid")
+		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.WriteFile(
+			filepath.Join(contextDir, metaFile),
+			[]byte("invalid json"),
+			0644,
+		))
+
+		_, err := s.load(contextDir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "parse metadata")
+	})
+
+	t.Run("permission-denied", func(t *testing.T) {
+		if os.Getuid() == 0 {
+			t.Skip("cannot test permission denied as root")
+		}
+
+		tmpDir := t.TempDir()
+		s := &store{root: tmpDir}
+
+		contextDir := filepath.Join(tmpDir, "no-access")
+		require.NoError(t, os.MkdirAll(contextDir, 0755))
+
+		meta := metadata{
+			Name: "test",
+			Endpoints: map[string]*endpoint{
+				"docker": {Host: "tcp://localhost:2375"},
+			},
+		}
+		setupTestContext(t, tmpDir, "no-access", meta)
+
+		// Remove read permissions
+		require.NoError(t, os.Chmod(filepath.Join(contextDir, metaFile), 0000))
+		defer os.Chmod(filepath.Join(contextDir, metaFile), 0644)
+
+		_, err := s.load(contextDir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "permission denied")
+	})
+
+	t.Run("empty-but-valid-json", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		s := &store{root: tmpDir}
+
+		contextDir := filepath.Join(tmpDir, "empty")
+		require.NoError(t, os.MkdirAll(contextDir, 0755))
+		require.NoError(t, os.WriteFile(
+			filepath.Join(contextDir, metaFile),
+			[]byte("{}"),
+			0644,
+		))
+
+		got, err := s.load(contextDir)
+		require.NoError(t, err)
+		assert.Empty(t, got.Name)
+		assert.Nil(t, got.Context)
+		assert.Empty(t, got.Endpoints)
+	})
+
+	t.Run("partial-metadata", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		s := &store{root: tmpDir}
+
+		contextDir := filepath.Join(tmpDir, "partial")
+		require.NoError(t, os.MkdirAll(contextDir, 0755))
+
+		// Only name and docker endpoint, no context metadata
+		meta := metadata{
+			Name: "test",
+			Endpoints: map[string]*endpoint{
+				"docker": {Host: "tcp://localhost:2375"},
+			},
+		}
+		setupTestContext(t, tmpDir, "partial", meta)
+
+		got, err := s.load(contextDir)
+		require.NoError(t, err)
+		assert.Equal(t, "test", got.Name)
+		assert.Nil(t, got.Context)
+		assert.Equal(t, "tcp://localhost:2375", got.Endpoints["docker"].Host)
 	})
 }
 
