@@ -15,21 +15,24 @@ func TestCurrent(t *testing.T) {
 	t.Run("current/1", func(tt *testing.T) {
 		setupDockerContexts(tt, 1, 3) // current context is context1
 
-		current := Current()
+		current, err := Current()
+		require.NoError(t, err)
 		require.Equal(t, "context1", current)
 	})
 
 	t.Run("current/auth-error", func(tt *testing.T) {
 		tt.Setenv("DOCKER_AUTH_CONFIG", "invalid-auth-config")
 
-		current := Current()
-		require.Equal(t, DefaultContextName, current)
+		current, err := Current()
+		require.Error(t, err)
+		require.Empty(t, current)
 	})
 
 	t.Run("current/override-host", func(tt *testing.T) {
 		tt.Setenv("DOCKER_HOST", "tcp://127.0.0.1:2")
 
-		current := Current()
+		current, err := Current()
+		require.NoError(t, err)
 		require.Equal(t, DefaultContextName, current)
 	})
 
@@ -37,7 +40,8 @@ func TestCurrent(t *testing.T) {
 		setupDockerContexts(tt, 1, 3)           // current context is context1
 		tt.Setenv("DOCKER_CONTEXT", "context2") // override the current context
 
-		current := Current()
+		current, err := Current()
+		require.NoError(t, err)
 		require.Equal(t, "context2", current)
 	})
 
@@ -45,7 +49,8 @@ func TestCurrent(t *testing.T) {
 		contextCount := 3
 		setupDockerContexts(tt, contextCount+1, contextCount) // current context is the empty one
 
-		current := Current()
+		current, err := Current()
+		require.NoError(t, err)
 		require.Equal(t, DefaultContextName, current)
 	})
 }
