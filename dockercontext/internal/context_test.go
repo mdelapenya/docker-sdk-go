@@ -141,7 +141,6 @@ func TestStore_load(t *testing.T) {
 
 		// Remove read permissions
 		require.NoError(t, os.Chmod(filepath.Join(contextDir, metaFile), 0o000))
-		defer os.Chmod(filepath.Join(contextDir, metaFile), 0o644)
 
 		_, err := s.load(contextDir)
 		require.Error(t, err)
@@ -298,7 +297,6 @@ func TestStore_list(t *testing.T) {
 
 		// Remove read permissions
 		require.NoError(t, os.Chmod(filepath.Join(contextDir, metaFile), 0o000))
-		defer os.Chmod(filepath.Join(contextDir, metaFile), 0o644) // Restore permissions for cleanup
 
 		_, err := s.list()
 		require.Error(t, err)
