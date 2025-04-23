@@ -18,23 +18,31 @@ import (
 )
 
 var (
-	ErrNotFound           = errors.New("model not found")
+	// ErrNotFound is returned when a model is not found.
+	ErrNotFound = errors.New("model not found")
+
+	// ErrServiceUnavailable is returned when the service is unavailable.
 	ErrServiceUnavailable = errors.New("service unavailable")
 )
 
+// Client is a client for the Docker Model Runner API.
 type Client struct {
 	dockerClient DockerHttpClient
 }
 
+// DockerHttpClient is an interface that can be used to mock the Docker client.
+//
 //go:generate mockgen -source=desktop.go -destination=../mocks/mock_desktop.go -package=mocks DockerHttpClient
 type DockerHttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+// New creates a new Client.
 func New(dockerClient DockerHttpClient) *Client {
 	return &Client{dockerClient}
 }
 
+// Status represents the status of the Docker Model Runner.
 type Status struct {
 	Running bool   `json:"running"`
 	Status  []byte `json:"status"`
@@ -82,6 +90,7 @@ func (c *Client) Status() Status {
 	}
 }
 
+// Pull pulls a model from the Docker Model Runner.
 func (c *Client) Pull(model string, progress func(string)) (string, bool, error) {
 	jsonData, err := json.Marshal(models.ModelCreateRequest{From: model})
 	if err != nil {
@@ -137,6 +146,7 @@ func (c *Client) Pull(model string, progress func(string)) (string, bool, error)
 	return "", progressShown, fmt.Errorf("unexpected end of stream while pulling model %s", model)
 }
 
+// Push pushes a model to the Docker Model Runner.
 func (c *Client) Push(model string, progress func(string)) (string, bool, error) {
 	pushPath := inference.ModelsPrefix + "/" + model + "/push"
 	resp, err := c.doRequest(
@@ -187,6 +197,7 @@ func (c *Client) Push(model string, progress func(string)) (string, bool, error)
 	return "", progressShown, fmt.Errorf("unexpected end of stream while pushing model %s", model)
 }
 
+// List lists all models in the Docker Model Runner.
 func (c *Client) List() ([]Model, error) {
 	modelsRoute := inference.ModelsPrefix
 	body, err := c.listRaw(modelsRoute, "")
@@ -202,6 +213,7 @@ func (c *Client) List() ([]Model, error) {
 	return modelsJson, nil
 }
 
+// ListOpenAI lists all models in the Docker Model Runner using the OpenAI API.
 func (c *Client) ListOpenAI() (OpenAIModelList, error) {
 	modelsRoute := inference.InferencePrefix + "/v1/models"
 	rawResponse, err := c.listRaw(modelsRoute, "")
@@ -215,6 +227,7 @@ func (c *Client) ListOpenAI() (OpenAIModelList, error) {
 	return modelsJson, nil
 }
 
+// Inspect inspects a model in the Docker Model Runner.
 func (c *Client) Inspect(model string) (Model, error) {
 	if model != "" {
 		if !strings.Contains(strings.Trim(model, "/"), "/") {
@@ -238,6 +251,7 @@ func (c *Client) Inspect(model string) (Model, error) {
 	return modelInspect, nil
 }
 
+// InspectOpenAI inspects a model in the Docker Model Runner using the OpenAI API.
 func (c *Client) InspectOpenAI(model string) (OpenAIModel, error) {
 	modelsRoute := inference.InferencePrefix + "/v1/models"
 	if !strings.Contains(strings.Trim(model, "/"), "/") {
@@ -258,6 +272,7 @@ func (c *Client) InspectOpenAI(model string) (OpenAIModel, error) {
 	return modelInspect, nil
 }
 
+// listRaw lists all models in the Docker Model Runner.
 func (c *Client) listRaw(route string, model string) ([]byte, error) {
 	resp, err := c.doRequest(http.MethodGet, route, nil)
 	if err != nil {
@@ -280,6 +295,7 @@ func (c *Client) listRaw(route string, model string) ([]byte, error) {
 
 }
 
+// fullModelID returns the full model ID for a given model ID.
 func (c *Client) fullModelID(id string) (string, error) {
 	bodyResponse, err := c.listRaw(inference.ModelsPrefix, "")
 	if err != nil {
@@ -300,6 +316,7 @@ func (c *Client) fullModelID(id string) (string, error) {
 	return "", fmt.Errorf("model with ID %s not found", id)
 }
 
+// Chat chats with a model in the Docker Model Runner.
 func (c *Client) Chat(model, prompt string) error {
 	if !strings.Contains(strings.Trim(model, "/"), "/") {
 		// Do an extra API call to check if the model parameter isn't a model ID.
@@ -375,6 +392,7 @@ func (c *Client) Chat(model, prompt string) error {
 	return nil
 }
 
+// Remove removes a model from the Docker Model Runner.
 func (c *Client) Remove(models []string, force bool) (string, error) {
 	modelRemoved := ""
 	for _, model := range models {
@@ -416,6 +434,7 @@ func (c *Client) Remove(models []string, force bool) (string, error) {
 	return modelRemoved, nil
 }
 
+// URL returns the URL for the Docker Model Runner.
 func URL(path string) string {
 	return fmt.Sprintf("http://localhost" + inference.ExperimentalEndpointsPrefix + path)
 }
@@ -443,6 +462,7 @@ func (c *Client) doRequest(method, path string, body io.Reader) (*http.Response,
 	return resp, nil
 }
 
+// handleQueryError is a helper function that handles query errors.
 func (c *Client) handleQueryError(err error, path string) error {
 	if errors.Is(err, ErrServiceUnavailable) {
 		return ErrServiceUnavailable
@@ -450,6 +470,7 @@ func (c *Client) handleQueryError(err error, path string) error {
 	return fmt.Errorf("error querying %s: %w", path, err)
 }
 
+// Tag tags a model in the Docker Model Runner.
 func (c *Client) Tag(source, targetRepo, targetTag string) (string, error) {
 	// Check if the source is a model ID, and expand it if necessary
 	if !strings.Contains(strings.Trim(source, "/"), "/") {
