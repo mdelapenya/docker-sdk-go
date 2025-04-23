@@ -27,7 +27,7 @@ type ModelList []*types.Model
 
 // ToOpenAI converts the model list to its OpenAI API representation. This function never
 // returns a nil slice (though it may return an empty slice).
-func (l ModelList) toOpenAI() *OpenAIModelList {
+func (l ModelList) ToOpenAI() *OpenAIModelList {
 	// Convert the constituent models.
 	models := make([]*OpenAIModel, len(l))
 	for m, model := range l {
