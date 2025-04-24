@@ -48,6 +48,7 @@ type Status struct {
 	Error   error  `json:"error"`
 }
 
+// Status returns the status of the Docker Model Runner.
 func (c *Client) Status() Status {
 	// TODO: Query "/".
 	resp, err := c.doRequest(http.MethodGet, inference.ModelsPrefix, nil)
