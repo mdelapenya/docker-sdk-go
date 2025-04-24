@@ -1,6 +1,12 @@
 package models
 
-import "github.com/docker/docker-sdk-go/dockermodelrunner/modeldistribution/types"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/docker/docker-sdk-go/dockermodelrunner/modeldistribution/types"
+)
 
 // ModelCreateRequest represents a model create request. It is designed to
 // follow Docker Engine API conventions, most closely following the request
@@ -48,7 +54,7 @@ type OpenAIModel struct {
 	// Object is the object type. For OpenAIModel, it is always "model".
 	Object string `json:"object"`
 	// Created is the Unix epoch timestamp corresponding to the model creation.
-	Created int64 `json:"created"`
+	Created time.Time `json:"created"`
 	// OwnedBy is the model owner. At the moment, it is always "docker".
 	OwnedBy string `json:"owned_by"`
 }
@@ -59,4 +65,35 @@ type OpenAIModelList struct {
 	Object string `json:"object"`
 	// Data is the list of models.
 	Data []*OpenAIModel `json:"data"`
+}
+
+// openAIModelAlias is an alias for OpenAIModel to avoid recursion in JSON marshaling/unmarshaling.
+// This is necessary because we want OpenAIModel to contain a time.Time field which is not directly
+// compatible with JSON serialization/deserialization.
+type openAIModelAlias OpenAIModel
+
+// openAIModelResponseJSON is a struct used for JSON marshaling/unmarshaling of OpenAIModel.
+// It includes a Unix timestamp for the Created field to ensure compatibility with JSON.
+type openAIModelResponseJSON struct {
+	openAIModelAlias
+	CreatedAt int64 `json:"created"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (mr *OpenAIModel) UnmarshalJSON(b []byte) error {
+	var resp openAIModelResponseJSON
+	if err := json.Unmarshal(b, &resp); err != nil {
+		return fmt.Errorf("unmarshal model response: %w", err)
+	}
+	*mr = OpenAIModel(resp.openAIModelAlias)
+	mr.Created = time.Unix(resp.CreatedAt, 0)
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler.
+func (mr OpenAIModel) MarshalJSON() ([]byte, error) {
+	return json.Marshal(openAIModelResponseJSON{
+		openAIModelAlias: openAIModelAlias(mr),
+		CreatedAt:        mr.Created.Unix(),
+	})
 }

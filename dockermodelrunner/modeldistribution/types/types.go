@@ -1,5 +1,11 @@
 package types
 
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
+
 // Store interface for model storage operations
 type Store interface {
 	// Push a model to the store with given tags
@@ -39,7 +45,38 @@ type Model struct {
 	// Files are the GGUF files associated with the model.
 	Files []string `json:"files"`
 	// Created is the Unix epoch timestamp corresponding to the model creation.
-	Created int64 `json:"created"`
+	Created time.Time `json:"created"`
+}
+
+// modelAlias is an alias for Model to avoid recursion in JSON marshaling/unmarshaling.
+// This is necessary because we want Model to contain a time.Time field which is not directly
+// compatible with JSON serialization/deserialization.
+type modelAlias Model
+
+// modelResponseJSON is a struct used for JSON marshaling/unmarshaling of Model.
+// It includes a Unix timestamp for the Created field to ensure compatibility with JSON.
+type modelResponseJSON struct {
+	modelAlias
+	CreatedAt int64 `json:"created"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (mr *Model) UnmarshalJSON(b []byte) error {
+	var resp modelResponseJSON
+	if err := json.Unmarshal(b, &resp); err != nil {
+		return fmt.Errorf("unmarshal model response: %w", err)
+	}
+	*mr = Model(resp.modelAlias)
+	mr.Created = time.Unix(resp.CreatedAt, 0)
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler.
+func (mr Model) MarshalJSON() ([]byte, error) {
+	return json.Marshal(modelResponseJSON{
+		modelAlias: modelAlias(mr),
+		CreatedAt:  mr.Created.Unix(),
+	})
 }
 
 // ModelIndex represents the index of all models in the store
