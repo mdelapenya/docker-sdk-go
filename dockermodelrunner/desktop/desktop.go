@@ -202,74 +202,81 @@ func (c *Client) List() ([]Model, error) {
 	modelsRoute := inference.ModelsPrefix
 	body, err := c.listRaw(modelsRoute, "")
 	if err != nil {
-		return []Model{}, err
+		return nil, err
 	}
 
 	var modelsJSON []Model
 	if err := json.Unmarshal(body, &modelsJSON); err != nil {
-		return modelsJSON, fmt.Errorf("unmarshal response body: %w", err)
+		return nil, fmt.Errorf("unmarshal response body: %w", err)
 	}
 
 	return modelsJSON, nil
 }
 
 // ListOpenAI lists all models in the Docker Model Runner using the OpenAI API.
-func (c *Client) ListOpenAI() (OpenAIModelList, error) {
+func (c *Client) ListOpenAI() (*OpenAIModelList, error) {
 	modelsRoute := inference.InferencePrefix + "/v1/models"
 	rawResponse, err := c.listRaw(modelsRoute, "")
 	if err != nil {
-		return OpenAIModelList{}, err
+		return nil, err
 	}
+
 	var modelsJSON OpenAIModelList
 	if err := json.Unmarshal(rawResponse, &modelsJSON); err != nil {
-		return modelsJSON, fmt.Errorf("unmarshal response body: %w", err)
+		return nil, fmt.Errorf("unmarshal response body: %w", err)
 	}
-	return modelsJSON, nil
+
+	return &modelsJSON, nil
 }
 
 // Inspect inspects a model in the Docker Model Runner.
-func (c *Client) Inspect(model string) (Model, error) {
+func (c *Client) Inspect(model string) (*Model, error) {
 	if model != "" {
 		if !strings.Contains(strings.Trim(model, "/"), "/") {
 			// Do an extra API call to check if the model parameter isn't a model ID.
 			modelId, err := c.fullModelID(model)
 			if err != nil {
-				return Model{}, fmt.Errorf("invalid model name: %s", model)
+				return nil, fmt.Errorf("invalid model name: %s", model)
 			}
 			model = modelId
 		}
 	}
+
 	rawResponse, err := c.listRaw(fmt.Sprintf("%s/%s", inference.ModelsPrefix, model), model)
 	if err != nil {
-		return Model{}, err
-	}
-	var modelInspect Model
-	if err := json.Unmarshal(rawResponse, &modelInspect); err != nil {
-		return modelInspect, fmt.Errorf("unmarshal response body: %w", err)
+		return nil, err
 	}
 
-	return modelInspect, nil
+	var modelInspect Model
+	if err := json.Unmarshal(rawResponse, &modelInspect); err != nil {
+		return nil, fmt.Errorf("unmarshal response body: %w", err)
+	}
+
+	return &modelInspect, nil
 }
 
 // InspectOpenAI inspects a model in the Docker Model Runner using the OpenAI API.
-func (c *Client) InspectOpenAI(model string) (OpenAIModel, error) {
+func (c *Client) InspectOpenAI(model string) (*OpenAIModel, error) {
 	modelsRoute := inference.InferencePrefix + "/v1/models"
 	if !strings.Contains(strings.Trim(model, "/"), "/") {
 		// Do an extra API call to check if the model parameter isn't a model ID.
 		var err error
 		if model, err = c.fullModelID(model); err != nil {
-			return OpenAIModel{}, fmt.Errorf("invalid model name: %s", model)
+			return nil, fmt.Errorf("invalid model name: %s", model)
 		}
 	}
+
 	rawResponse, err := c.listRaw(fmt.Sprintf("%s/%s", modelsRoute, model), model)
 	if err != nil {
-		return OpenAIModel{}, err
+		return nil, err
 	}
+
 	var modelInspect OpenAIModel
 	if err := json.Unmarshal(rawResponse, &modelInspect); err != nil {
-		return modelInspect, fmt.Errorf("unmarshal response body: %w", err)
+		return nil, fmt.Errorf("unmarshal response body: %w", err)
 	}
-	return modelInspect, nil
+
+	return &modelInspect, nil
 }
 
 // listRaw lists all models in the Docker Model Runner.
