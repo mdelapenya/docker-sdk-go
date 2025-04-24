@@ -206,7 +206,7 @@ func (c *Client) List() ([]Model, error) {
 
 	var modelsJSON []Model
 	if err := json.Unmarshal(body, &modelsJSON); err != nil {
-		return modelsJSON, fmt.Errorf("failed to unmarshal response body: %w", err)
+		return modelsJSON, fmt.Errorf("unmarshal response body: %w", err)
 	}
 
 	return modelsJSON, nil
@@ -221,7 +221,7 @@ func (c *Client) ListOpenAI() (OpenAIModelList, error) {
 	}
 	var modelsJSON OpenAIModelList
 	if err := json.Unmarshal(rawResponse, &modelsJSON); err != nil {
-		return modelsJSON, fmt.Errorf("failed to unmarshal response body: %w", err)
+		return modelsJSON, fmt.Errorf("unmarshal response body: %w", err)
 	}
 	return modelsJSON, nil
 }
@@ -244,7 +244,7 @@ func (c *Client) Inspect(model string) (Model, error) {
 	}
 	var modelInspect Model
 	if err := json.Unmarshal(rawResponse, &modelInspect); err != nil {
-		return modelInspect, fmt.Errorf("failed to unmarshal response body: %w", err)
+		return modelInspect, fmt.Errorf("unmarshal response body: %w", err)
 	}
 
 	return modelInspect, nil
@@ -266,7 +266,7 @@ func (c *Client) InspectOpenAI(model string) (OpenAIModel, error) {
 	}
 	var modelInspect OpenAIModel
 	if err := json.Unmarshal(rawResponse, &modelInspect); err != nil {
-		return modelInspect, fmt.Errorf("failed to unmarshal response body: %w", err)
+		return modelInspect, fmt.Errorf("unmarshal response body: %w", err)
 	}
 	return modelInspect, nil
 }
@@ -283,12 +283,12 @@ func (c *Client) listRaw(route string, model string) ([]byte, error) {
 		if model != "" && resp.StatusCode == http.StatusNotFound {
 			return nil, fmt.Errorf("%w: %s", ErrNotFound, model)
 		}
-		return nil, fmt.Errorf("failed to list models: %s", resp.Status)
+		return nil, fmt.Errorf("list models: %s", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("read response body: %w", err)
 	}
 	return body, nil
 }
@@ -302,7 +302,7 @@ func (c *Client) fullModelID(id string) (string, error) {
 
 	var modelsJSON []Model
 	if err := json.Unmarshal(bodyResponse, &modelsJSON); err != nil {
-		return "", fmt.Errorf("failed to unmarshal response body: %w", err)
+		return "", fmt.Errorf("unmarshal response body: %w", err)
 	}
 
 	for _, m := range modelsJSON {
@@ -499,7 +499,7 @@ func (c *Client) Tag(source, targetRepo, targetTag string) (string, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read response body: %w", err)
+		return "", fmt.Errorf("read response body: %w", err)
 	}
 
 	return string(body), nil
