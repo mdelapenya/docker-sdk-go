@@ -109,7 +109,7 @@ func (c *Client) Pull(model string, progress func(string)) (string, bool, error)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", false, fmt.Errorf("pull %s failed with status %s: %s", model, resp.Status, string(body))
+		return "", false, fmt.Errorf("pull %s status=%d body=%s", model, resp.StatusCode, body)
 	}
 
 	progressShown := false
@@ -160,7 +160,7 @@ func (c *Client) Push(model string, progress func(string)) (string, bool, error)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", false, fmt.Errorf("push %s failed with status %s: %s", model, resp.Status, string(body))
+		return "", false, fmt.Errorf("push %s status=%d body=%s", model, resp.StatusCode, body)
 	}
 
 	progressShown := false
@@ -352,7 +352,7 @@ func (c *Client) Chat(model, prompt string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("error response: status=%d body=%s", resp.StatusCode, body)
+		return fmt.Errorf("chat with %s status=%d body=%s", model, resp.StatusCode, body)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -494,7 +494,7 @@ func (c *Client) Tag(source, targetRepo, targetTag string) (string, error) {
 
 	if resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("tag with status %s: %s", resp.Status, string(body))
+		return "", fmt.Errorf("tag %s:%s status=%d body=%s", targetRepo, targetTag, resp.StatusCode, body)
 	}
 
 	body, err := io.ReadAll(resp.Body)
