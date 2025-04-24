@@ -114,6 +114,11 @@ func (c *Client) Pull(model string, progress func(string)) (string, bool, error)
 		return "", false, fmt.Errorf("pull %s status=%d body=%s", model, resp.StatusCode, body)
 	}
 
+	return scanProgress(resp, "pull", model, progress)
+}
+
+// scanProgress scans the progress of a model for a given action.
+func scanProgress(resp *http.Response, action string, model string, progress func(string)) (string, bool, error) {
 	progressShown := false
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -135,7 +140,7 @@ func (c *Client) Pull(model string, progress func(string)) (string, bool, error)
 			progress(progressMsg.Message)
 			progressShown = true
 		case "error":
-			return "", progressShown, fmt.Errorf("pull %s: %s", model, progressMsg.Message)
+			return "", progressShown, fmt.Errorf("%s %s: %s", action, model, progressMsg.Message)
 		case "success":
 			return progressMsg.Message, progressShown, nil
 		default:
@@ -143,8 +148,7 @@ func (c *Client) Pull(model string, progress func(string)) (string, bool, error)
 		}
 	}
 
-	// If we get here, something went wrong
-	return "", progressShown, fmt.Errorf("unexpected end of stream while pulling model %s", model)
+	return "", progressShown, fmt.Errorf("%s model %s: unexpected end of stream", action, model)
 }
 
 // Push pushes a model to the Docker Model Runner.
@@ -165,37 +169,7 @@ func (c *Client) Push(model string, progress func(string)) (string, bool, error)
 		return "", false, fmt.Errorf("push %s status=%d body=%s", model, resp.StatusCode, body)
 	}
 
-	progressShown := false
-
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		progressLine := scanner.Text()
-		if progressLine == "" {
-			continue
-		}
-
-		// Parse the progress message
-		var progressMsg ProgressMessage
-		if err := json.Unmarshal([]byte(html.UnescapeString(progressLine)), &progressMsg); err != nil {
-			return "", progressShown, fmt.Errorf("unmarshal progress message: %w", err)
-		}
-
-		// Handle different message types
-		switch progressMsg.Type {
-		case "progress":
-			progress(progressMsg.Message)
-			progressShown = true
-		case "error":
-			return "", progressShown, fmt.Errorf("push %s: %s", model, progressMsg.Message)
-		case "success":
-			return progressMsg.Message, progressShown, nil
-		default:
-			return "", progressShown, fmt.Errorf("unknown message type: %s", progressMsg.Type)
-		}
-	}
-
-	// If we get here, something went wrong
-	return "", progressShown, fmt.Errorf("unexpected end of stream while pushing model %s", model)
+	return scanProgress(resp, "push", model, progress)
 }
 
 // List lists all models in the Docker Model Runner.
