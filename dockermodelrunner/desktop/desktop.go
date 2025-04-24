@@ -93,7 +93,7 @@ func (c *Client) Status() Status {
 func (c *Client) Pull(model string, progress func(string)) (string, bool, error) {
 	jsonData, err := json.Marshal(models.ModelCreateRequest{From: model})
 	if err != nil {
-		return "", false, fmt.Errorf("error marshaling request: %w", err)
+		return "", false, fmt.Errorf("marshal request: %w", err)
 	}
 
 	createPath := inference.ModelsPrefix + "/create"
@@ -109,7 +109,7 @@ func (c *Client) Pull(model string, progress func(string)) (string, bool, error)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", false, fmt.Errorf("pulling %s failed with status %s: %s", model, resp.Status, string(body))
+		return "", false, fmt.Errorf("pull %s failed with status %s: %s", model, resp.Status, string(body))
 	}
 
 	progressShown := false
@@ -124,7 +124,7 @@ func (c *Client) Pull(model string, progress func(string)) (string, bool, error)
 		// Parse the progress message
 		var progressMsg ProgressMessage
 		if err := json.Unmarshal([]byte(html.UnescapeString(progressLine)), &progressMsg); err != nil {
-			return "", progressShown, fmt.Errorf("error parsing progress message: %w", err)
+			return "", progressShown, fmt.Errorf("unmarshal progress message: %w", err)
 		}
 
 		// Handle different message types
@@ -133,7 +133,7 @@ func (c *Client) Pull(model string, progress func(string)) (string, bool, error)
 			progress(progressMsg.Message)
 			progressShown = true
 		case "error":
-			return "", progressShown, fmt.Errorf("error pulling model: %s", progressMsg.Message)
+			return "", progressShown, fmt.Errorf("pull %s: %s", model, progressMsg.Message)
 		case "success":
 			return progressMsg.Message, progressShown, nil
 		default:
@@ -160,7 +160,7 @@ func (c *Client) Push(model string, progress func(string)) (string, bool, error)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", false, fmt.Errorf("pushing %s failed with status %s: %s", model, resp.Status, string(body))
+		return "", false, fmt.Errorf("push %s failed with status %s: %s", model, resp.Status, string(body))
 	}
 
 	progressShown := false
@@ -175,7 +175,7 @@ func (c *Client) Push(model string, progress func(string)) (string, bool, error)
 		// Parse the progress message
 		var progressMsg ProgressMessage
 		if err := json.Unmarshal([]byte(html.UnescapeString(progressLine)), &progressMsg); err != nil {
-			return "", progressShown, fmt.Errorf("error parsing progress message: %w", err)
+			return "", progressShown, fmt.Errorf("unmarshal progress message: %w", err)
 		}
 
 		// Handle different message types
@@ -184,7 +184,7 @@ func (c *Client) Push(model string, progress func(string)) (string, bool, error)
 			progress(progressMsg.Message)
 			progressShown = true
 		case "error":
-			return "", progressShown, fmt.Errorf("error pushing model: %s", progressMsg.Message)
+			return "", progressShown, fmt.Errorf("push %s: %s", model, progressMsg.Message)
 		case "success":
 			return progressMsg.Message, progressShown, nil
 		default:
@@ -336,7 +336,7 @@ func (c *Client) Chat(model, prompt string) error {
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return fmt.Errorf("error marshaling request: %w", err)
+		return fmt.Errorf("marshal request: %w", err)
 	}
 
 	chatCompletionsPath := inference.InferencePrefix + "/v1/chat/completions"
@@ -374,7 +374,7 @@ func (c *Client) Chat(model, prompt string) error {
 
 		var streamResp OpenAIChatResponse
 		if err := json.Unmarshal([]byte(data), &streamResp); err != nil {
-			return fmt.Errorf("error parsing stream response: %w", err)
+			return fmt.Errorf("unmarshal stream response: %w", err)
 		}
 
 		if len(streamResp.Choices) > 0 && streamResp.Choices[0].Delta.Content != "" {
@@ -384,7 +384,7 @@ func (c *Client) Chat(model, prompt string) error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading response stream: %w", err)
+		return fmt.Errorf("read response stream: %w", err)
 	}
 
 	return nil
@@ -441,7 +441,7 @@ func URL(path string) string {
 func (c *Client) doRequest(method, path string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, URL(path), body)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+		return nil, fmt.Errorf("new %s request: %w", method, err)
 	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -465,7 +465,7 @@ func (c *Client) handleQueryError(err error, path string) error {
 	if errors.Is(err, ErrServiceUnavailable) {
 		return ErrServiceUnavailable
 	}
-	return fmt.Errorf("error querying %s: %w", path, err)
+	return fmt.Errorf("query %s: %w", path, err)
 }
 
 // Tag tags a model in the Docker Model Runner.
@@ -494,7 +494,7 @@ func (c *Client) Tag(source, targetRepo, targetTag string) (string, error) {
 
 	if resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("tagging failed with status %s: %s", resp.Status, string(body))
+		return "", fmt.Errorf("tag with status %s: %s", resp.Status, string(body))
 	}
 
 	body, err := io.ReadAll(resp.Body)
