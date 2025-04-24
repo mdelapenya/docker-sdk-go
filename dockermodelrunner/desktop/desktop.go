@@ -27,18 +27,18 @@ var (
 
 // Client is a client for the Docker Model Runner API.
 type Client struct {
-	dockerClient DockerHttpClient
+	dockerClient DockerHTTPClient
 }
 
-// DockerHttpClient is an interface that can be used to mock the Docker client.
+// DockerHTTPClient is an interface that can be used to mock the Docker client.
 //
-//go:generate mockgen -source=desktop.go -destination=../mocks/mock_desktop.go -package=mocks DockerHttpClient
-type DockerHttpClient interface {
+//go:generate mockgen -source=desktop.go -destination=../mocks/mock_desktop.go -package=mocks DockerHTTPClient
+type DockerHTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
 // New creates a new Client.
-func New(dockerClient DockerHttpClient) *Client {
+func New(dockerClient DockerHTTPClient) *Client {
 	return &Client{dockerClient}
 }
 
@@ -205,12 +205,12 @@ func (c *Client) List() ([]Model, error) {
 		return []Model{}, err
 	}
 
-	var modelsJson []Model
-	if err := json.Unmarshal(body, &modelsJson); err != nil {
-		return modelsJson, fmt.Errorf("failed to unmarshal response body: %w", err)
+	var modelsJSON []Model
+	if err := json.Unmarshal(body, &modelsJSON); err != nil {
+		return modelsJSON, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 
-	return modelsJson, nil
+	return modelsJSON, nil
 }
 
 // ListOpenAI lists all models in the Docker Model Runner using the OpenAI API.
@@ -220,11 +220,11 @@ func (c *Client) ListOpenAI() (OpenAIModelList, error) {
 	if err != nil {
 		return OpenAIModelList{}, err
 	}
-	var modelsJson OpenAIModelList
-	if err := json.Unmarshal(rawResponse, &modelsJson); err != nil {
-		return modelsJson, fmt.Errorf("failed to unmarshal response body: %w", err)
+	var modelsJSON OpenAIModelList
+	if err := json.Unmarshal(rawResponse, &modelsJSON); err != nil {
+		return modelsJSON, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
-	return modelsJson, nil
+	return modelsJSON, nil
 }
 
 // Inspect inspects a model in the Docker Model Runner.
@@ -292,7 +292,6 @@ func (c *Client) listRaw(route string, model string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 	return body, nil
-
 }
 
 // fullModelID returns the full model ID for a given model ID.
@@ -302,12 +301,12 @@ func (c *Client) fullModelID(id string) (string, error) {
 		return "", err
 	}
 
-	var modelsJson []Model
-	if err := json.Unmarshal(bodyResponse, &modelsJson); err != nil {
+	var modelsJSON []Model
+	if err := json.Unmarshal(bodyResponse, &modelsJSON); err != nil {
 		return "", fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 
-	for _, m := range modelsJson {
+	for _, m := range modelsJSON {
 		if m.ID[7:19] == id || strings.TrimPrefix(m.ID, "sha256:") == id || m.ID == id {
 			return m.ID, nil
 		}
@@ -436,7 +435,7 @@ func (c *Client) Remove(models []string, force bool) (string, error) {
 
 // URL returns the URL for the Docker Model Runner.
 func URL(path string) string {
-	return fmt.Sprintf("http://localhost" + inference.ExperimentalEndpointsPrefix + path)
+	return "http://localhost" + inference.ExperimentalEndpointsPrefix + path
 }
 
 // doRequest is a helper function that performs HTTP requests and handles 503 responses
