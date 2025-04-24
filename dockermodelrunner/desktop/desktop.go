@@ -64,28 +64,29 @@ func (c *Client) Status() Status {
 		}
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
-		var status []byte
-		statusResp, err := c.doRequest(http.MethodGet, inference.InferencePrefix+"/status", nil)
-		if err != nil {
-			status = []byte(fmt.Sprintf("error querying status: %v", err))
-		} else {
-			defer statusResp.Body.Close()
-			statusBody, err := io.ReadAll(statusResp.Body)
-			if err != nil {
-				status = []byte(fmt.Sprintf("error reading status body: %v", err))
-			} else {
-				status = statusBody
-			}
-		}
+	if resp.StatusCode != http.StatusOK {
 		return Status{
-			Running: true,
-			Status:  status,
+			Running: false,
+			Error:   fmt.Errorf("unexpected status code: %d", resp.StatusCode),
+		}
+	}
+
+	var status []byte
+	statusResp, err := c.doRequest(http.MethodGet, inference.InferencePrefix+"/status", nil)
+	if err != nil {
+		status = []byte(fmt.Sprintf("error querying status: %v", err))
+	} else {
+		defer statusResp.Body.Close()
+		statusBody, err := io.ReadAll(statusResp.Body)
+		if err != nil {
+			status = []byte(fmt.Sprintf("error reading status body: %v", err))
+		} else {
+			status = statusBody
 		}
 	}
 	return Status{
-		Running: false,
-		Error:   fmt.Errorf("unexpected status code: %d", resp.StatusCode),
+		Running: true,
+		Status:  status,
 	}
 }
 
