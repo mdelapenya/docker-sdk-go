@@ -4,14 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/docker/docker-sdk-go/dockermodelrunner/inference"
 	"github.com/docker/docker-sdk-go/dockermodelrunner/models"
@@ -282,7 +281,7 @@ func (c *Client) listRaw(route string, model string) ([]byte, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		if model != "" && resp.StatusCode == http.StatusNotFound {
-			return nil, errors.Wrap(ErrNotFound, model)
+			return nil, fmt.Errorf("%w: %s", ErrNotFound, model)
 		}
 		return nil, fmt.Errorf("failed to list models: %s", resp.Status)
 	}
